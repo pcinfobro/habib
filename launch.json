@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Local Pipeline",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/local_pipeline.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Run Tests",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/test_pipeline.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Data Ingestion",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/data_ingestion.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "data_sources": {
+    "orders": {
+      "type": "csv",
+      "config": {
+        "file_path": "/data/input/orders.csv",
+        "encoding": "utf-8",
+        "separator": ",",
+        "na_values": ["", "NULL", "null", "N/A"]
+      }
+    },
+    "customers": {
+      "type": "api",
+      "config": {
+        "url": "https://api.ecommerce.com/customers",
+        "headers": {
+          "Authorization": "Bearer YOUR_API_TOKEN",
+          "Content-Type": "application/json"
+        },
+        "data_key": "customers",
+        "paginated": true,
+        "next_key": "next_page_url",
+        "timeout": 30
+      }
+    },
+    "products": {
+      "type": "json",
+      "config": {
+        "file_path": "/data/input/products.json"
+      }
+    }
+  },
+  "processing": {
+    "duplicate_subset": ["customer_id", "order_id"],
+    "missing_values": {
+      "customer_name": "Unknown",
+      "order_amount": "mean",
+      "order_date": "drop",
+      "product_category": "mode",
+      "customer_email": "Unknown"
+    },
+    "data_types": {
+      "order_date": "datetime",
+      "order_amount": "numeric",
+      "customer_id": "string",
+      "product_id": "string"
+    },
+    "outliers": {
+      "columns": ["order_amount", "quantity"],
+      "method": "iqr"
+    },
+    "standardization": {
+      "email_columns": ["customer_email"],
+      "phone_columns": ["customer_phone"],
+      "currency_columns": ["order_amount", "product_price"],
+      "text_columns": ["customer_name", "product_name"]
+    },
+    "derived_columns": {
+      "add_processing_timestamp": true,
+      "data_source": "ecommerce_pipeline",
+      "custom_columns": {
+        "order_year": "order_date.dt.year",
+        "order_month": "order_date.dt.month",
+        "high_value_order": "order_amount > 1000",
+        "customer_segment": "case when order_amount > 500 then 'premium' else 'standard' end"
+      }
+    }
+  },
+  "source_processing": {
+    "orders": {
+      "duplicate_subset": ["order_id"],
+      "missing_values": {
+        "shipping_address": "Unknown",
+        "discount_amount": 0
+      }
+    },
+    "customers": {
+      "duplicate_subset": ["customer_id", "email"],
+      "missing_values": {
+        "phone": "Unknown",
+        "address": "Unknown"
+      }
+    }
+  },
+  "storage": {
+    "hdfs": {
+      "hdfs_url": "hdfs://namenode:9000",
+      "hdfs_user": "hadoop"
+    },
+    "hive": {
+      "database": "ecommerce"
+    },
+    "base_path": "/data/ecommerce"
+  },
+  "partitioning": {
+    "orders": {
+      "columns": ["order_year", "order_month"]
+    },
+    "customers": {
+      "columns": ["customer_segment"]
+    },
+    "products": {
+      "columns": ["product_category"]
+    }
+  },
+  "data_quality": {
+    "orders": {
+      "min_records": 10,
+      "required_columns": ["order_id", "customer_id", "order_amount", "order_date"],
+      "null_thresholds": {
+        "order_id": 0,
+        "customer_id": 0,
+        "order_amount": 5
+      }
+    },
+    "customers": {
+      "min_records": 5,
+      "required_columns": ["customer_id", "customer_name"],
+      "null_thresholds": {
+        "customer_id": 0,
+        "customer_name": 10
+      }
+    },
+    "products": {
+      "min_records": 1,
+      "required_columns": ["product_id", "product_name", "price"],
+      "null_thresholds": {
+        "product_id": 0,
+        "product_name": 5,
+        "price": 0
+      }
+    }
+  },
+  "final_validation": {
+    "queries": [
+      {
+        "query": "SELECT COUNT(*) FROM processed_orders",
+        "expected_min": 10
+      },
+      {
+        "query": "SELECT COUNT(*) FROM processed_customers",
+        "expected_min": 5
+      },
+      {
+        "query": "SELECT COUNT(*) FROM processed_products",
+        "expected_min": 1
+      }
+    ]
+  },
+  "streaming": {
+    "kafka": {
+      "bootstrap_servers": ["kafka:9092"],
+      "consumer_group": "ecommerce-streaming",
+      "input_topics": ["raw-orders", "raw-customers", "raw-products"],
+      "output_topics": {
+        "raw-orders": "processed-orders",
+        "raw-customers": "processed-customers",
+        "raw-products": "processed-products"
+      }
+    }
+  },
+  "monitoring": {
+    "health_checks": {
+      "data_freshness_hours": 12,
+      "min_daily_records": 100,
+      "max_error_rate": 0.05
+    },
+    "alerts": {
+      "email": ["data-team@company.com"],
+      "slack_webhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+    }
+  }
+}

@@ -1,0 +1,227 @@
+version: '3.8'
+
+services:
+  # Hadoop NameNode
+  namenode:
+    image: apache/hadoop:3.3.4
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      CLUSTER_NAME: "ecommerce-cluster"
+      HADOOP_CONF_DIR: "/opt/hadoop/etc/hadoop"
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
+    networks:
+      - ecommerce-network
+
+  # Hadoop DataNode
+  datanode:
+    image: apache/hadoop:3.3.4
+    command: ["hdfs", "datanode"]
+    environment:
+      HADOOP_CONF_DIR: "/opt/hadoop/etc/hadoop"
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
+    depends_on:
+      - namenode
+    networks:
+      - ecommerce-network
+
+  # Apache Spark Master
+  spark-master:
+    image: bitnami/spark:3.4.1
+    hostname: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT_NUMBER=7077
+      - SPARK_MASTER_WEBUI_PORT_NUMBER=8080
+    volumes:
+      - spark_logs:/opt/bitnami/spark/logs
+      - ./data:/data
+    networks:
+      - ecommerce-network
+
+  # Apache Spark Worker
+  spark-worker:
+    image: bitnami/spark:3.4.1
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+    volumes:
+      - ./data:/data
+    networks:
+      - ecommerce-network
+
+  # Apache Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.1
+    hostname: kafka
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+    networks:
+      - ecommerce-network
+
+  # Apache Hive Metastore
+  hive-metastore:
+    image: apache/hive:3.1.3
+    hostname: hive-metastore
+    ports:
+      - "9083:9083"
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore -Djavax.jdo.option.ConnectionUserName=hive -Djavax.jdo.option.ConnectionPassword=hive"
+    depends_on:
+      - postgres
+      - namenode
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL for Hive Metastore
+  postgres:
+    image: postgres:13
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  # Apache Iceberg with Spark
+  iceberg-spark:
+    image: tabulario/spark-iceberg:3.4.1_1.3.1
+    hostname: iceberg-spark
+    ports:
+      - "8888:8888"
+    environment:
+      - SPARK_HOME=/opt/spark
+      - PYSPARK_PYTHON=/usr/bin/python3
+    volumes:
+      - ./data:/data
+      - ./notebooks:/notebooks
+    command: >
+      bash -c "
+        /opt/spark/bin/spark-sql --packages org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:1.3.1 \
+        --conf spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions \
+        --conf spark.sql.catalog.spark_catalog=org.apache.iceberg.spark.SparkSessionCatalog \
+        --conf spark.sql.catalog.spark_catalog.type=hive \
+        --conf spark.sql.catalog.local=org.apache.iceberg.spark.SparkCatalog \
+        --conf spark.sql.catalog.local.type=hadoop \
+        --conf spark.sql.catalog.local.warehouse=hdfs://namenode:9000/data/iceberg \
+        --conf spark.eventLog.enabled=true \
+        --conf spark.eventLog.dir=hdfs://namenode:9000/spark-logs
+      "
+    depends_on:
+      - namenode
+      - spark-master
+      - hive-metastore
+    networks:
+      - ecommerce-network
+
+  # Streamlit Dashboard
+  streamlit-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    hostname: streamlit-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - HADOOP_CONF_DIR=/hadoop-config
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - HDFS_NAMENODE_URL=hdfs://namenode:9000
+    volumes:
+      - ./data:/data
+      - ./hadoop-config:/hadoop-config
+      - .:/app
+    depends_on:
+      - namenode
+      - kafka
+      - spark-master
+      - hive-metastore
+    networks:
+      - ecommerce-network
+
+  # Kafka UI for monitoring
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    hostname: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ecommerce-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    depends_on:
+      - kafka
+    networks:
+      - ecommerce-network
+
+  # Spark History Server
+  spark-history:
+    image: bitnami/spark:3.4.1
+    hostname: spark-history
+    ports:
+      - "18080:18080"
+    environment:
+      - SPARK_MODE=history-server
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=hdfs://namenode:9000/spark-logs
+    volumes:
+      - ./data:/data
+    depends_on:
+      - namenode
+    networks:
+      - ecommerce-network
+
+volumes:
+  namenode_data:
+    driver: local
+  datanode_data:
+    driver: local
+  postgres_data:
+    driver: local
+  kafka_data:
+    driver: local
+  spark_logs:
+    driver: local
+
+networks:
+  ecommerce-network:
+    driver: bridge

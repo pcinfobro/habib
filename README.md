@@ -33,8 +33,8 @@ Visit the deployed app and start analyzing your data instantly!
 ### Option 2: Local Development
 ```bash
 # Clone the repository
-git clone https://github.com/IamHammadBro/ecommerce-pipeline-dashboard.git
-cd ecommerce-pipeline-dashboard
+git clone https://github.com/mr-uzairnaseer/habib_big_data.git
+cd habib_big_data
 
 # Install dependencies
 pip install -r requirements.txt
@@ -110,7 +110,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Hammad** - [IamHammadBro](https://github.com/IamHammadBro)
+**Uzair Naseer** - [mr-uzairnaseer](https://github.com/mr-uzairnaseer)
 
 ## 🌟 Show your support
 

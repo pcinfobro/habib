@@ -8,6 +8,7 @@ import json
 import zipfile
 import tempfile
 import shutil
+from path_config import get_powerbi_paths
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import logging
@@ -200,10 +201,11 @@ def update_powerbi_data_source(pbix_file, old_data_source, new_data_source):
         return False
 
 if __name__ == "__main__":
-    # Example usage
-    pbix_path = r"c:\Users\ghani\Desktop\Pipeline\ECOMMERCE HAMMAD\ECOMMERCE HAMMAD.pbix"
+    # Example usage - using portable paths
+    paths = get_powerbi_paths()
+    pbix_path = paths['pbix_file']
     old_source = r"d:\projects\cleaned_superstore_dataset.csv"
-    new_source = r"c:\Users\ghani\Desktop\Pipeline\ECOMMERCE HAMMAD\pipeline_processed_data.csv"
+    new_source = paths['processed_data']
     
     print("🔄 Updating Power BI data source...")
     success = update_powerbi_data_source(pbix_path, old_source, new_source)

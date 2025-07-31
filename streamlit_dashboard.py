@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from path_config import get_base_dirs, find_data_directory, get_powerbi_paths
 import numpy as np
 import io
 import json
@@ -478,18 +479,10 @@ class IntegratedPipelineDashboard:
             # Try to find a directory that might contain Power BI files
             possible_powerbi_dirs = []
             
-            # Check if we can find ECOMMERCE HAMMAD directory
-            base_dirs = [
-                os.path.join(os.getcwd(), "..", "ECOMMERCE HAMMAD"),
-                os.path.join(os.path.dirname(os.getcwd()), "ECOMMERCE HAMMAD"),
-                os.path.join("c:", "Users", "ghani", "Desktop", "Pipeline", "ECOMMERCE HAMMAD")
-            ]
+            # Check if we can find ECOMMERCE HAMMAD directory using portable paths
+            base_dirs = get_base_dirs()
             
-            powerbi_dir = None
-            for dir_path in base_dirs:
-                if os.path.exists(dir_path):
-                    powerbi_dir = dir_path
-                    break
+            powerbi_dir = find_data_directory()
             
             # If no specific directory found, use a generic one
             if not powerbi_dir:
@@ -1325,7 +1318,7 @@ def main():
                         )
                         fig.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
                         fig.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="main_category_sales")
                     else:
                         st.warning("Category or Sales column not found in dataset")
                 
@@ -1357,7 +1350,7 @@ def main():
                         )
                         fig.update_traces(textposition='inside', textinfo='percent+label')
                         fig.update_layout(height=400)
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="main_region_pie")
                     else:
                         st.warning("Region or Sales column not found in dataset")
                 
@@ -1391,7 +1384,7 @@ def main():
                                        title="Sales vs Profit by Category (Bubble size = Profit Margin)",
                                        size_max=60)
                         fig.update_layout(height=400, xaxis_title="Sales ($)", yaxis_title="Profit ($)")
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="main_profit_margin")
                 else:
                     st.warning("Profit or Sales columns not found in dataset")
             
@@ -1416,7 +1409,7 @@ def main():
                     )
                     fig.update_traces(line=dict(width=3, color='#1f77b4'), marker=dict(size=6))
                     fig.update_layout(height=400, xaxis_title="Date", yaxis_title="Sales ($)")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_monthly_sales")
                 
                 with col2:
                     # Monthly comparison
@@ -1431,7 +1424,7 @@ def main():
                                title="Monthly Sales vs Profit",
                                barmode='group')
                     fig.update_layout(height=400, xaxis_title="Month", yaxis_title="Amount ($)")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_quarterly_trend")
             
             # Row 4: Advanced Analytics
             st.markdown("#### 🔍 Advanced Business Insights")
@@ -1463,7 +1456,7 @@ def main():
                                             color=profit_col if profit_col else sales_col,
                                             color_continuous_scale='RdYlBu')
                             fig.update_layout(height=400)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="main_product_performance")
                         else:
                             st.warning("No segment data available for analysis")
                     else:
@@ -1504,7 +1497,7 @@ def main():
                                             xaxis_title=analysis_col.title(), 
                                             yaxis_title=f"{value_col.title()} ($)", 
                                             xaxis={'tickangle': 45})
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="main_customer_analysis")
                         else:
                             st.warning("No data available for analysis")
                     else:
@@ -1605,7 +1598,7 @@ def main():
                             yaxis_title="Total Sales ($)",
                             height=400
                         )
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="main_discount_impact")
                     else:
                         st.warning("No customer data available for value matrix analysis")
             
@@ -1638,7 +1631,7 @@ def main():
                         height=400,
                         showlegend=True
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_shipping_analysis")
             
             with customer_col3:
                 if 'order_date' in df.columns and 'customer' in df.columns:
@@ -1677,7 +1670,7 @@ def main():
                         height=400,
                         legend=dict(x=0, y=1)
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_state_performance")
 
             # Row 6: Product Performance Matrix
             st.markdown("####  Product Performance Matrix")
@@ -1705,7 +1698,7 @@ def main():
                         )
                         fig.update_traces(textinfo="label+value+percent parent")
                         fig.update_layout(height=500)
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="main_subcategory_profit")
                     else:
                         st.warning("⚠️ No product hierarchy data available for visualization.")
                         st.info("💡 Please ensure your dataset contains category and subcategory columns with valid sales data.")
@@ -1755,7 +1748,7 @@ def main():
                                 height=500,
                                 legend=dict(x=0.7, y=1)
                             )
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="main_segment_comparison")
                         else:
                             st.warning("⚠️ No product sales data available for ABC analysis.")
                             st.info("💡 Please ensure your dataset contains product names with valid sales data.")
@@ -1790,7 +1783,7 @@ def main():
                             size_max=60
                         )
                         fig.update_layout(height=400)
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="main_order_priority")
                     else:
                         st.warning("⚠️ No regional performance data available for visualization.")
                         st.info("💡 Please ensure your dataset contains region and state columns with valid sales data.")
@@ -1825,7 +1818,7 @@ def main():
                         height=400,
                         xaxis={'tickangle': 45}
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_correlation_matrix")
 
             # Row 8: Financial Analytics Dashboard
             st.markdown("####   Financial Analytics Dashboard")
@@ -1852,7 +1845,7 @@ def main():
                         yaxis_title="Frequency",
                         height=350
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_seasonal_trends")
             
             with fin_col2:
                 if 'discount' in df.columns and 'profit' in df.columns:
@@ -1882,7 +1875,7 @@ def main():
                                 height=350,
                                 xaxis={'tickangle': 45}
                             )
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="main_city_performance")
                         except ValueError as e:
                             st.warning("⚠️ Unable to create discount analysis chart.")
                             st.info("💡 Discount data may be insufficient for binning analysis.")
@@ -1914,7 +1907,7 @@ def main():
                         yaxis_title="Growth Rate (%)",
                         height=350
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="main_product_categories")
 
             # Row 9: Business Intelligence Summary
             st.markdown("####  Business Intelligence Summary")
@@ -1997,16 +1990,17 @@ def main():
         
         if not powerbi_dir:
             # Try to detect it from common locations
-            possible_dirs = [
-                os.path.join(os.getcwd(), "..", "ECOMMERCE HAMMAD"),
-                os.path.join(os.path.dirname(os.getcwd()), "ECOMMERCE HAMMAD"),
-                os.path.join("c:", "Users", "ghani", "Desktop", "Pipeline", "ECOMMERCE HAMMAD")
-            ]
-            for dir_path in possible_dirs:
-                if os.path.exists(dir_path):
-                    powerbi_dir = dir_path
-                    st.session_state.powerbi_dir = powerbi_dir
-                    break
+            # Find Power BI directory using portable paths
+            powerbi_dir = find_data_directory()
+            
+            if not powerbi_dir:
+                # Fallback: check possible directories
+                possible_dirs = get_base_dirs()
+                for dir_path in possible_dirs:
+                    if os.path.exists(dir_path):
+                        powerbi_dir = dir_path
+                        st.session_state.powerbi_dir = powerbi_dir
+                        break
         
         if powerbi_dir:
             st.info(f"  Power BI Directory: {powerbi_dir}")
@@ -2100,7 +2094,7 @@ def main():
                                        color_discrete_sequence=px.colors.qualitative.Set3)
                             fig.update_traces(textposition='inside', textinfo='percent+label')
                             fig.update_layout(showlegend=True, height=400)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="powerbi_category_pie")
                     
                     with col2:
                         if 'region' in powerbi_df.columns and 'profit' in powerbi_df.columns:
@@ -2114,7 +2108,7 @@ def main():
                                        color='profit',
                                        color_continuous_scale='Viridis')
                             fig.update_layout(height=400)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="powerbi_region_bar")
                     
                     # Row 2: Time Series and State Analysis
                     if 'order_date' in powerbi_df.columns and 'sales' in powerbi_df.columns:
@@ -2131,7 +2125,7 @@ def main():
                                         markers=True)
                             fig.update_traces(line=dict(width=3), marker=dict(size=8))
                             fig.update_layout(height=400, xaxis_title="Month", yaxis_title="Sales ($)")
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="powerbi_monthly_trend")
                         except Exception as e:
                             st.info("📅 Date formatting needs adjustment for time series")
                     
@@ -2149,7 +2143,7 @@ def main():
                                        color='sales',
                                        color_continuous_scale='Blues')
                             fig.update_layout(height=400, yaxis={'categoryorder':'total ascending'})
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="powerbi_top_states")
                     
                     with col2:
                         if 'subcategory' in powerbi_df.columns and 'profit' in powerbi_df.columns:
@@ -2164,7 +2158,7 @@ def main():
                                                color='profit',
                                                color_continuous_scale='RdYlBu')
                                 fig.update_layout(height=400)
-                                st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, use_container_width=True, key="powerbi_subcategory_treemap")
                             else:
                                 st.warning("⚠️ No subcategory profit data available for treemap.")
                                 st.info("💡 Please ensure your dataset contains subcategory data with valid profit values.")
@@ -2187,7 +2181,7 @@ def main():
                                            title="Segment Performance: Sales vs Profit",
                                            size_max=60)
                             fig.update_layout(height=400)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="powerbi_segment_scatter")
                     
                     with col2:
                         if 'ship_mode' in powerbi_df.columns and 'sales' in powerbi_df.columns:
@@ -2202,7 +2196,7 @@ def main():
                                        color='sales',
                                        color_continuous_scale='Sunset')
                             fig.update_layout(height=400, xaxis_title="Shipping Mode", yaxis_title="Sales ($)")
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="powerbi_ship_mode_bar")
                     
                     # Row 5: Advanced Analytics
                     if 'discount' in powerbi_df.columns and 'profit_margin' in powerbi_df.columns:
@@ -2230,7 +2224,7 @@ def main():
                                                color='profit_margin',
                                                color_continuous_scale='RdYlGn')
                                     fig.update_layout(height=400, xaxis_title="Discount Range", yaxis_title="Avg Profit Margin")
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig, use_container_width=True, key="powerbi_discount_margin")
                                 else:
                                     st.warning("⚠️ No discount analysis data available after grouping.")
                             except ValueError as e:
@@ -2239,7 +2233,7 @@ def main():
                         else:
                             st.warning("⚠️ No valid discount data available for analysis.")
                             st.info("💡 Please ensure your dataset contains numeric discount values with variation.")
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="service_monitoring_status")
                     
                     # Interactive Data Summary
                     st.markdown("####   Interactive Data Summary")

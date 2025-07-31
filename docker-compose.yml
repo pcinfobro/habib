@@ -1,32 +1,42 @@
-version: '3.8'
-
 services:
   # Hadoop NameNode
   namenode:
-    image: apache/hadoop:3.3.4
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     hostname: namenode
-    command: ["hdfs", "namenode"]
     ports:
       - "9870:9870"
       - "9000:9000"
     environment:
       CLUSTER_NAME: "ecommerce-cluster"
-      HADOOP_CONF_DIR: "/opt/hadoop/etc/hadoop"
+      CORE_CONF_fs_defaultFS: "hdfs://namenode:9000"
+      CORE_CONF_hadoop_http_staticuser_user: "root"
+      CORE_CONF_hadoop_proxyuser_hue_hosts: "*"
+      CORE_CONF_hadoop_proxyuser_hue_groups: "*"
+      CORE_CONF_io_compression_codecs: "org.apache.hadoop.io.compress.SnappyCodec"
+      HDFS_CONF_dfs_webhdfs_enabled: "true"
+      HDFS_CONF_dfs_permissions_enabled: "false"
+      HDFS_CONF_dfs_nameservices: "ecommerce-cluster"
+      HDFS_CONF_dfs_ha_namenodes_ecommerce___cluster: "nn1,nn2"
+      HDFS_CONF_dfs_namenode_rpc___address_ecommerce___cluster_nn1: "namenode:9000"
     volumes:
       - namenode_data:/hadoop/dfs/name
-      - ./hadoop-config:/opt/hadoop/etc/hadoop
     networks:
       - ecommerce-network
 
   # Hadoop DataNode
   datanode:
-    image: apache/hadoop:3.3.4
-    command: ["hdfs", "datanode"]
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    hostname: datanode
     environment:
-      HADOOP_CONF_DIR: "/opt/hadoop/etc/hadoop"
+      CORE_CONF_fs_defaultFS: "hdfs://namenode:9000"
+      CORE_CONF_hadoop_http_staticuser_user: "root"
+      CORE_CONF_hadoop_proxyuser_hue_hosts: "*"
+      CORE_CONF_hadoop_proxyuser_hue_groups: "*"
+      CORE_CONF_io_compression_codecs: "org.apache.hadoop.io.compress.SnappyCodec"
+      HDFS_CONF_dfs_webhdfs_enabled: "true"
+      HDFS_CONF_dfs_permissions_enabled: "false"
     volumes:
       - datanode_data:/hadoop/dfs/data
-      - ./hadoop-config:/opt/hadoop/etc/hadoop
     depends_on:
       - namenode
     networks:
@@ -67,29 +77,28 @@ services:
 
   # Apache Kafka
   kafka:
-    image: confluentinc/cp-kafka:7.4.1
+    image: bitnami/kafka:3.5
     hostname: kafka
     ports:
       - "9092:9092"
       - "9101:9101"
     environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
-      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_JMX_PORT: 9101
-      KAFKA_JMX_HOSTNAME: localhost
-      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092'
+      KAFKA_CFG_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093'
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CFG_KRAFT_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+      ALLOW_PLAINTEXT_LISTENER: yes
     volumes:
-      - kafka_data:/tmp/kraft-combined-logs
+      - kafka_data:/bitnami/kafka
     networks:
       - ecommerce-network
 

@@ -1,139 +1,109 @@
-# 🚀 E-commerce Analytics Hub
+# E-commerce Data Pipeline - Clean Implementation
 
-A beautiful, modern Big Data pipeline dashboard built with Streamlit, featuring real-time analytics and AI-powered insights for e-commerce data.
+## Overview
+This is a complete enterprise data pipeline implementing the full ChatGPT specification:
+- **Data Ingestion**: Kafka streaming
+- **Data Storage**: HDFS distributed storage
+- **Data Processing**: Spark cluster processing
+- **Data Export**: Automated PowerBI integration
+- **Visualization**: PowerBI dashboards + Streamlit interface
+- **Automation**: PowerBI auto-refresh and scheduling
+- **Orchestration**: Airflow DAG workflow management
 
-![Dashboard Preview](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
-![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=for-the-badge&logo=plotly&logoColor=white)
-
-## ✨ Features
-
-- 🎨 **Beautiful Modern UI** - Glassmorphism design with gradient themes
-- 📊 **Real-time Analytics** - Interactive data visualization and insights
-- 🔄 **Robust Data Processing** - Handles multiple CSV formats with smart encoding detection
-- 📈 **Advanced Visualizations** - Plotly-powered charts and graphs
-- 🚀 **Big Data Ready** - Designed for integration with Kafka, Spark, and HDFS
-- ⚡ **Power BI Integration** - Automated reporting and dashboard generation
-- 🔍 **Service Monitoring** - Real-time status of Big Data services
-
-## 🎯 Supported Datasets
-
-The dashboard is optimized for e-commerce datasets, particularly:
-- `superstore_dataset.csv` - Main e-commerce data
-- `cleaned_superstore_dataset.csv` - Pre-processed data
-- `navigator_ft-data_preview.csv` - Navigation analytics
-- `MOCK_DATA.csv` - Sample test data
-
-## 🚀 Quick Start
-
-### Option 1: Streamlit Cloud (Recommended)
-Visit the deployed app and start analyzing your data instantly!
-
-### Option 2: Local Development
+## Quick Start
 ```bash
-# Clone the repository
-git clone https://github.com/mr-uzairnaseer/habib_big_data.git
-cd habib_big_data
+# Start the complete pipeline
+docker-compose up -d
 
-# Install dependencies
-pip install -r requirements.txt
+# Check all services are running
+docker-compose ps
 
-# Run the dashboard
-streamlit run streamlit_dashboard.py
+# Access services:
+# - Streamlit Dashboard: http://localhost:8501
+# - PowerBI Service API: http://localhost:5000
+# - Airflow UI: http://localhost:8080 (admin/admin)
+# - Kafka UI: http://localhost:8081
+# - HDFS UI: http://localhost:9870
+# - Spark UI: http://localhost:8080
 ```
 
-## 📋 Requirements
+## Core Components
 
-- Python 3.8+
-- Streamlit 1.28.0+
-- Pandas 1.5.0+
-- Plotly 5.15.0+
+### 1. Docker Services (`docker-compose.yml`)
+- **Kafka + Zookeeper**: Data streaming and messaging
+- **HDFS (NameNode + DataNode)**: Distributed data storage
+- **Spark (Master + Worker)**: Data processing cluster
+- **PostgreSQL**: Metadata and pipeline state storage
+- **Airflow**: Pipeline orchestration and scheduling
+- **PowerBI Service**: Automated dashboard creation and refresh
+- **Streamlit**: Interactive web dashboard
 
-## 🎨 Dashboard Sections
+### 2. Pipeline Orchestration (`dags/enterprise_ecommerce_pipeline.py`)
+Complete Airflow DAG implementing:
+- Data ingestion from CSV to Kafka
+- Streaming data processing with Spark
+- HDFS storage management
+- PowerBI dataset creation and refresh
+- Data quality validation
+- Error handling and notifications
 
-### 📤 Data Upload & Processing
-- Drag-and-drop CSV upload
-- Automatic format detection
-- Real-time data preview
-- Smart column mapping
+### 3. PowerBI Automation (`powerbi_service.py`)
+Enterprise PowerBI service with:
+- Flask API for dashboard management
+- Automated dataset registration
+- Dashboard creation and refresh scheduling
+- PostgreSQL integration for tracking
+- MSAL authentication for PowerBI REST API
 
-### 📊 Real-time Insights
-- Key Performance Indicators
-- Sales analytics
-- Profit analysis
-- Interactive visualizations
-
-### ⚡ Power BI Integration
-- Automated report generation
-- PBIX file creation
-- Data export capabilities
-
-### 🔍 Service Monitoring
-- Big Data service status
-- Pipeline metrics
-- System health checks
-
-### 🗂️ Data Explorer
-- Raw data inspection
-- Column analysis
+### 4. Data Visualization (`streamlit_dashboard.py`)
+Interactive dashboard with:
+- Real-time data visualization
+- Pipeline status monitoring
 - Data quality metrics
+- Performance analytics
 
-## 🛠️ Technologies Used
+### 5. Pipeline Verification (`verify_pipeline.py`)
+Comprehensive testing script:
+- Service health checks
+- Data flow validation
+- End-to-end pipeline testing
+- Performance monitoring
 
-- **Frontend**: Streamlit with custom CSS
-- **Data Processing**: Pandas, NumPy
-- **Visualizations**: Plotly
-- **Big Data**: Kafka, Spark, HDFS integration
-- **Design**: Glassmorphism UI with gradient themes
-
-## 📊 Data Pipeline Architecture
-
+## File Structure
 ```
-CSV Upload → Data Validation → Processing → Analytics → Visualization
-     ↓              ↓              ↓           ↓            ↓
-  Format      Column Mapping   Cleaning   Insights    Interactive
- Detection      & Validation   & Enrichment  Engine      Dashboard
+ecommerce-data-pipeline/
+├── docker-compose.yml              # Main orchestration
+├── powerbi_service.py              # PowerBI automation service  
+├── streamlit_dashboard.py          # Interactive dashboard
+├── verify_pipeline.py              # Pipeline testing
+├── dags/
+│   └── enterprise_ecommerce_pipeline.py  # Airflow DAG
+├── config/
+│   ├── pipeline_config.json        # Pipeline configuration
+│   └── pipeline_config_secure.json # Secure configuration
+├── data/
+│   ├── input/                      # Source data files
+│   ├── processed/                  # Processed data
+│   ├── output/                     # Final outputs
+│   └── logs/                       # Pipeline logs
+├── spark-apps/                     # Spark applications
+├── plugins/                        # Airflow plugins
+└── logs/                          # System logs
 ```
 
-## 🤝 Contributing
+## Deployment Notes
+- All services are containerized and networked properly
+- Data persistence configured for databases and storage
+- Environment variables for secure configuration
+- Health checks and restart policies enabled
+- Scalable Spark cluster configuration
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+## Next Steps
+1. Configure PowerBI authentication (MSAL credentials)
+2. Upload source data to `data/input/`
+3. Run `docker-compose up -d` to start all services
+4. Access Airflow UI to trigger the pipeline DAG
+5. Monitor progress through Streamlit dashboard
+6. View generated PowerBI dashboards
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Uzair Naseer** - [mr-uzairnaseer](https://github.com/mr-uzairnaseer)
-
-## 🌟 Show your support
-
-Give a ⭐️ if this project helped you!
-
----
-
-Built with ❤️ using Streamlit and Python
-
-## Troubleshooting
-
-### Common Issues:
-
-1. **Module not found errors:**
-   - Ensure virtual environment is activated
-   - Check Python interpreter in VS Code
-
-2. **Permission errors:**
-   - Make sure you have write permissions to the data directory
-
-3. **Import errors:**
-   - Verify all dependencies are installed: `pip list`
-
-### Getting Help:
-- Check the logs in `data/logs/pipeline.log`
-- Run tests to verify setup: `python test_pipeline.py`
+This implementation provides a complete, production-ready data pipeline matching all enterprise requirements.

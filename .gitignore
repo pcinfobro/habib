@@ -8,6 +8,19 @@ env/
 venv/
 .venv/
 
+# Security and Environment Files
+.env
+.env.local
+.env.production
+**/secrets/
+**/*.key
+**/*.pem
+**/*.crt
+config/secrets.json
+credentials.json
+auth.json
+service-account.json
+
 # Data files
 *.csv
 *.xlsx

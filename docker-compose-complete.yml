@@ -2,10 +2,11 @@ version: '3.8'
 
 services:
   # =====================================
-  # DATA INGESTION (Kafka)
+  # DATA INGESTION LAYER (Kafka)
   # =====================================
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
     container_name: zookeeper
     ports:
       - "2181:2181"
@@ -13,23 +14,57 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - pipeline-network
+      - bigdata-network
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
     container_name: kafka
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
+      - "9101:9101"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
     networks:
-      - pipeline-network
+      - bigdata-network
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.4.0
+    hostname: kafka-connect
+    container_name: kafka-connect
+    depends_on:
+      - kafka
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'kafka:29092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: false
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+    networks:
+      - bigdata-network
 
   # =====================================
   # STORAGE LAYER (HDFS + Hive)
@@ -49,7 +84,7 @@ services:
     volumes:
       - namenode_data:/tmp/hadoop-root/dfs/name
     networks:
-      - pipeline-network
+      - bigdata-network
 
   datanode1:
     image: apache/hadoop:3
@@ -61,7 +96,7 @@ services:
     volumes:
       - datanode1_data:/tmp/hadoop-root/dfs/data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   datanode2:
     image: apache/hadoop:3
@@ -73,7 +108,7 @@ services:
     volumes:
       - datanode2_data:/tmp/hadoop-root/dfs/data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   resourcemanager:
     image: apache/hadoop:3
@@ -87,7 +122,7 @@ services:
     volumes:
       - resourcemanager_data:/tmp/hadoop-root/logs
     networks:
-      - pipeline-network
+      - bigdata-network
 
   nodemanager:
     image: apache/hadoop:3
@@ -99,7 +134,7 @@ services:
     volumes:
       - nodemanager_data:/tmp/hadoop-root/logs
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # Hive Metastore Database
   postgres-hive:
@@ -113,7 +148,7 @@ services:
     volumes:
       - postgres_hive_data:/var/lib/postgresql/data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # Hive Metastore
   hive-metastore:
@@ -133,13 +168,13 @@ services:
     ports:
       - "9083:9083"
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # =====================================
   # PROCESSING LAYER (Spark)
   # =====================================
   spark-master:
-    image: bitnami/spark:3.5.0
+    image: bitnami/spark:3.4
     hostname: spark-master
     container_name: spark-master
     command: bin/spark-class org.apache.spark.deploy.master.Master
@@ -152,18 +187,14 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
-      - SPARK_MASTER_MEMORY=4g
-      - SPARK_DRIVER_MEMORY=4g
-      - SPARK_EXECUTOR_MEMORY=4g
-      - SPARK_DRIVER_MAX_RESULT_SIZE=2g
     volumes:
       - ./spark-apps:/opt/spark-apps
       - ./data:/opt/spark-data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   spark-worker1:
-    image: bitnami/spark:3.5.0
+    image: bitnami/spark:3.4
     hostname: spark-worker1
     container_name: spark-worker1
     command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
@@ -172,9 +203,8 @@ services:
     environment:
       SPARK_MODE: worker
       SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: 4G
-      SPARK_WORKER_CORES: 4
-      SPARK_EXECUTOR_MEMORY: 4g
+      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_CORES: 2
       SPARK_RPC_AUTHENTICATION_ENABLED: no
       SPARK_RPC_ENCRYPTION_ENABLED: no
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
@@ -183,7 +213,7 @@ services:
       - ./spark-apps:/opt/spark-apps
       - ./data:/opt/spark-data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   spark-worker2:
     image: bitnami/spark:3.4
@@ -205,7 +235,7 @@ services:
       - ./spark-apps:/opt/spark-apps
       - ./data:/opt/spark-data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # =====================================
   # QUERY ENGINE (Trino)
@@ -219,7 +249,7 @@ services:
     volumes:
       - ./trino-config:/etc/trino
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # =====================================
   # ORCHESTRATION (Airflow)
@@ -235,12 +265,10 @@ services:
     volumes:
       - postgres_airflow_data:/var/lib/postgresql/data
     networks:
-      - pipeline-network
+      - bigdata-network
 
   airflow-init:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
+    image: apache/airflow:2.7.0
     hostname: airflow-init
     container_name: airflow-init
     depends_on:
@@ -251,22 +279,16 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      POWERBI_CLIENT_ID: ${POWERBI_CLIENT_ID:-}
-      POWERBI_CLIENT_SECRET: ${POWERBI_CLIENT_SECRET:-}
-      POWERBI_TENANT_ID: ${POWERBI_TENANT_ID:-}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./data:/opt/airflow/data
-    command: bash -c "airflow db init && airflow users create --username habib --firstname Habib --lastname Admin --role Admin --email admin@example.com --password habib"
+    command: bash -c "airflow db init && airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin123"
     networks:
-      - pipeline-network
+      - bigdata-network
 
   airflow-webserver:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
+    image: apache/airflow:2.7.0
     hostname: airflow-webserver
     container_name: airflow-webserver
     depends_on:
@@ -277,24 +299,18 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      POWERBI_CLIENT_ID: ${POWERBI_CLIENT_ID:-}
-      POWERBI_CLIENT_SECRET: ${POWERBI_CLIENT_SECRET:-}
-      POWERBI_TENANT_ID: ${POWERBI_TENANT_ID:-}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./data:/opt/airflow/data
     ports:
       - "8081:8080"
     command: airflow webserver
     networks:
-      - pipeline-network
+      - bigdata-network
 
   airflow-scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
+    image: apache/airflow:2.7.0
     hostname: airflow-scheduler
     container_name: airflow-scheduler
     depends_on:
@@ -305,17 +321,13 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      POWERBI_CLIENT_ID: ${POWERBI_CLIENT_ID:-}
-      POWERBI_CLIENT_SECRET: ${POWERBI_CLIENT_SECRET:-}
-      POWERBI_TENANT_ID: ${POWERBI_TENANT_ID:-}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./data:/opt/airflow/data
     command: airflow scheduler
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # =====================================
   # POWERBI AUTOMATION SERVICE
@@ -337,7 +349,7 @@ services:
     ports:
       - "5000:5000"
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # PowerBI Data Database
   postgres-powerbi:
@@ -353,7 +365,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - pipeline-network
+      - bigdata-network
 
   # =====================================
   # MONITORING & VISUALIZATION
@@ -370,10 +382,10 @@ services:
       - ./data:/app/data
       - ./config:/app/config
     networks:
-      - pipeline-network
+      - bigdata-network
 
 networks:
-  pipeline-network:
+  bigdata-network:
     driver: bridge
 
 volumes:

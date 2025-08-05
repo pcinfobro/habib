@@ -10,17 +10,12 @@
       }
     },
     "customers": {
-      "type": "api",
+      "type": "csv",
       "config": {
-        "url": "https://api.ecommerce.com/customers",
-        "headers": {
-          "Authorization": "Bearer YOUR_API_TOKEN",
-          "Content-Type": "application/json"
-        },
-        "data_key": "customers",
-        "paginated": true,
-        "next_key": "next_page_url",
-        "timeout": 30
+        "file_path": "/data/input/customers.csv",
+        "encoding": "utf-8",
+        "separator": ",",
+        "na_values": ["", "NULL", "null", "N/A"]
       }
     },
     "products": {

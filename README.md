@@ -362,7 +362,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - All technologies, including encryption and decryption standards, utilized within our publicly accessible digital services are based on industry-recognized and openly available protocols. All distributions are implemented using custom-developed code to ensure security, performance, and adaptability.
 ---
-
-
-#   h a b i b  
- 

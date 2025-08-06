@@ -1,0 +1,8 @@
+# Minimal Streamlit Requirements - Python 3.13 Compatible
+streamlit
+pandas
+numpy
+plotly
+matplotlib
+seaborn
+requests

@@ -13,13 +13,13 @@ import json
 from datetime import datetime
 
 # Import the main PowerBI service
-from powerbi_enterprise_service import PowerBIService
+from powerbi_enterprise_service import PowerBIAutomationService
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # Initialize PowerBI service
-powerbi_service = PowerBIService()
+powerbi_service = PowerBIAutomationService()
 
 @app.route('/health', methods=['GET'])
 def health_check():

@@ -1,7 +1,12 @@
-# E-commerce Data Pipeline - Clean Implementation
+# Enterprise Big Data Pipeline - Core Implementation
 
-## Overview
-This is a complete enterprise data pipeline implementing the full ChatGPT specification:
+## 📋 Overview
+
+This directory contains the core implementation of the Enterprise Big Data Pipeline. For complete documentation, setup instructions, and project overview, please refer to the main **[README.md](../README.md)** file in the root directory.
+
+## 🚀 Quick Summary
+
+This is a production-ready enterprise data pipeline with:
 - **Data Ingestion**: Kafka streaming
 - **Data Storage**: HDFS distributed storage
 - **Data Processing**: Spark cluster processing

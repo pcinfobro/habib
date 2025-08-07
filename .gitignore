@@ -42,29 +42,3 @@ Thumbs.db
 # Power BI
 *.pbix
 *.pbit
-
-# Docker and Container Files
-.docker/
-docker-compose.override.yml
-*.dockerignore
-
-# Big Data and Analytics
-*.parquet
-*.avro
-*.orc
-temp/
-cache/
-*.tmp
-
-# Backup files
-*.backup
-*.bak
-*~
-
-# Hadoop/Spark temporary files
-metastore_db/
-derby.log
-spark-warehouse/
-
-# Kerberos
-*.keytab

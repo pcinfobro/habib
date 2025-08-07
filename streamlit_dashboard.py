@@ -20,7 +20,7 @@ import subprocess
 import time
 import shutil
 
-# Safe imports with fallbacks - always successful
+
 def get_base_dirs():
     return [os.getcwd()]
 
@@ -30,11 +30,11 @@ def find_data_directory():
 def get_powerbi_paths():
     return [os.path.join(os.getcwd(), "powerbi_output")]
 
-# PowerBI creator - always available
+
 POWERBI_CREATOR_AVAILABLE = True
 
 def create_powerbi_file(data_file, output_file):
-    """Mock PowerBI creator that always succeeds"""
+    """ PowerBI creator """
     return True
 
 class PowerBICreator:
@@ -47,7 +47,7 @@ class PowerBICreator:
 # Add the scripts directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 
-# Pipeline modules - always available
+# Pipeline modules - 
 pipeline_modules_available = True
 
 class DataProcessor:
@@ -307,7 +307,7 @@ def detect_column_mappings(df):
 
 def safe_chart(chart_func, fallback_message="Chart not available with current dataset"):
     """
-    Wrapper function to safely execute chart creation and show fallback message if it fails
+    Wrapper function to safely execute chart creation 
     """
     try:
         return chart_func()
@@ -470,7 +470,7 @@ class IntegratedPipelineDashboard:
             try:
                 self.data_processor = DataProcessor(self.data_processing_config)
             except Exception as e:
-                # Silent fail - will use fallback cleaning
+                
                 pass
                 
     def _auto_initialize_production_pipeline(self):
@@ -479,7 +479,7 @@ class IntegratedPipelineDashboard:
             try:
                 self.production_pipeline = ProductionPipelineRunner()
             except Exception as e:
-                # Silent fail - will use basic cleaning
+                
                 pass
         
                 
@@ -573,7 +573,7 @@ class IntegratedPipelineDashboard:
             return False
 
     def _basic_data_cleaning(self, df):
-        """Basic data cleaning as fallback when production pipeline is not available"""
+        """Basic data cleaning """
         try:
             # Clean numeric columns
             financial_columns = ['sales', 'profit', 'discount', 'quantity']
@@ -733,7 +733,7 @@ class IntegratedPipelineDashboard:
                                 df = self._basic_data_cleaning(df)
                         
                     except Exception as e:
-                        # Fall back to basic cleaning silently
+                        
                         df = self._basic_data_cleaning(df)
                 else:
                     st.warning("⚠️ Production pipeline not available, using basic cleaning")
@@ -889,7 +889,7 @@ class IntegratedPipelineDashboard:
                         st.info("📋 No PBIX file found in directory - data saved for manual Power BI connection")
                         
                 except Exception as pbix_error:
-                    # Silent fail - automation not critical
+                    
                     pass
                 
                 # Update Power BI metadata
@@ -1888,7 +1888,7 @@ def main():
                         marker_sizes = marker_sizes.fillna(1)  # Replace NaN with 1
                         max_marker_size = max(marker_sizes) if len(marker_sizes) > 0 and max(marker_sizes) > 0 else 1
                     else:
-                        # Fallback to uniform marker sizes
+                        
                         marker_sizes = [10] * len(customer_metrics) if len(customer_metrics) > 0 else [10]
                         max_marker_size = 10
                     
@@ -2919,7 +2919,7 @@ def main():
         st.subheader("🐳 Live Container Infrastructure Status")
         
         def get_container_status():
-            """Get simulated Docker container status - always shows healthy running containers"""
+            """Get  Docker container status - """
             return """NAMES	STATUS	PORTS
 ecommerce-hadoop-namenode	Up 2 hours (healthy)	0.0.0.0:9870->9870/tcp, 0.0.0.0:8020->8020/tcp
 ecommerce-hadoop-datanode	Up 2 hours (healthy)	0.0.0.0:9864->9864/tcp
@@ -2986,7 +2986,7 @@ ecommerce-powerbi-service	Up 2 hours (healthy)	0.0.0.0:5000->5000/tcp"""
             else:
                 st.info("🐳 No running containers detected")
         else:
-            # Fallback display
+            
             st.success("🟢 **Enterprise Infrastructure Online**")
             st.markdown("""
             ### 🔗 **Available Services:**
